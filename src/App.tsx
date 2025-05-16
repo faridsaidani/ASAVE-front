@@ -362,12 +362,15 @@ const App: React.FC = () => {
 
 
   return (
-    <div className="app-container flex flex-col lg:flex-row h-screen max-h-screen bg-slate-100 text-slate-800">
+    <div className="app-container flex flex-col lg:flex-row h-screen max-h-screen bg-gradient-to-br from-slate-50 to-slate-100 text-slate-800 overflow-hidden">
       {/* Left Panel: Controls and Text Editor/Viewer */}
-      <main className="main-content flex-grow p-4 sm:p-6 space-y-6 overflow-y-auto">
-        <header className="mb-6 flex justify-between items-center">
-          <h1 className="text-2xl lg:text-3xl font-bold text-sky-700 flex items-center">
-            <Edit3 size={30} className="mr-3 text-sky-600" /> ASAVE Text-Based Assistant
+      <main className="main-content flex-grow p-4 sm:p-6 space-y-6 overflow-y-auto scrollbar-thin">
+        <header className="mb-6 flex justify-between items-center bg-white p-4 rounded-lg shadow-sm">
+          <h1 className="text-2xl lg:text-3xl font-bold flex items-center">
+            <Edit3 size={30} className="mr-3 text-[#0ea5e9]" /> 
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#0284c7] to-[#38bdf8]">
+              ASAVE Text-Based Assistant
+            </span>
           </h1>
           {isLoading && (
             <button 
@@ -377,7 +380,7 @@ const App: React.FC = () => {
                 setApiMessage({type: 'info', text: 'AI processing cancelled by user.'});
                 setProgressLog(prev => [...prev, {event_type:"system_log", message: "⏹️ User cancelled AI processing.", step_code:"USER_CANCEL"}]);
               }}
-              className="text-xs px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-md shadow-sm"
+              className="text-xs px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-md shadow-sm transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0"
             >
               Cancel AI
             </button>
@@ -400,9 +403,10 @@ const App: React.FC = () => {
         )}
 
         {/* Section 1: System Initialization (for backend vector stores) */}
-        <section className="bg-white p-5 rounded-lg shadow space-y-4">
+        <section className="bg-white rounded-lg shadow-md border border-slate-200/60 hover:shadow-lg transition-shadow duration-300 p-5 space-y-4">
           <h2 className="text-lg font-semibold text-slate-700 flex items-center">
-            <Settings size={20} className="mr-2 text-sky-600"/>1. System Setup
+            <Settings size={20} className="mr-2 text-[#0ea5e9]"/>
+            <span className="border-b-2 border-[#7dd3fc] pb-1">1. System Setup</span>
           </h2>
           <div>
             <h3 className="text-md font-medium text-slate-600 mb-2">Initialize Backend Knowledge Base:</h3>
@@ -430,7 +434,7 @@ const App: React.FC = () => {
               id="ss-init-uploader"
             />
             <FileUploader label="Explicit Rules JSON (Optional)" accept=".json" onFilesUploaded={(file) => setRulesFileForInit(file as File)} id="rules-init-uploader" />
-            <button onClick={handleInitializeBackend} disabled={isLoading || !fasFilesForInit} className="w-full mt-3 py-2 px-4 bg-sky-600 hover:bg-sky-700 text-white font-medium rounded-md shadow-sm disabled:bg-slate-400 transition-colors">
+            <button onClick={handleInitializeBackend} disabled={isLoading || !fasFilesForInit} className="px-4 py-2 rounded-md font-medium transition-all duration-200 transform active:scale-[0.98] bg-gradient-to-r from-[#0284c7] to-[#0ea5e9] text-white hover:from-[#0369a1] hover:to-[#0284c7] shadow-sm w-full mt-3">
               {(isLoading && apiMessage?.text.includes('Initializing backend')) ? <Loader2 className="inline mr-2 h-4 w-4 animate-spin"/> : '🚀 '}
               Initialize Backend DBs
             </button>
@@ -439,9 +443,10 @@ const App: React.FC = () => {
         </section>
 
         {/* Section 2: FAS Text Extraction and Editing */}
-        <section className="bg-white p-5 rounded-lg shadow space-y-4">
+        <section className="bg-white rounded-lg shadow-md border border-slate-200/60 hover:shadow-lg transition-shadow duration-300 p-5 space-y-4">
             <h2 className="text-lg font-semibold text-slate-700 mb-3 flex items-center">
-                <FileText size={20} className="mr-2 text-sky-600"/>2. Load, View & Edit FAS Document
+                <FileText size={20} className="mr-2 text-[#0ea5e9]"/>
+                <span className="border-b-2 border-[#7dd3fc] pb-1">2. Load, View & Edit FAS Document</span>
             </h2>
             <FileUploader 
                 label="Select FAS PDF to Extract Markdown" 
@@ -457,10 +462,10 @@ const App: React.FC = () => {
                 <div className="my-3">
                     <span className="text-sm font-medium text-slate-700 mr-3">View Mode:</span>
                     <div className="inline-flex rounded-md shadow-sm" role="group">
-                        <button type="button" onClick={() => setViewMode('edit')} className={`px-3 py-1.5 text-xs font-medium rounded-l-lg ${viewMode === 'edit' ? 'bg-sky-600 text-white z-10 ring-1 ring-sky-500' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-300'}`}>
+                        <button type="button" onClick={() => setViewMode('edit')} className={`px-3 py-1.5 text-xs font-medium rounded-l-lg ${viewMode === 'edit' ? 'bg-[#0284c7] text-white z-10 ring-1 ring-[#0ea5e9]' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-300'} transition-colors duration-200`}>
                             <Edit size={14} className="inline mr-1"/> Edit Raw
                         </button>
-                        <button type="button" onClick={() => setViewMode('preview')} className={`px-3 py-1.5 text-xs font-medium rounded-r-lg ${viewMode === 'preview' ? 'bg-sky-600 text-white z-10 ring-1 ring-sky-500' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-300 border-l-0'}`}>
+                        <button type="button" onClick={() => setViewMode('preview')} className={`px-3 py-1.5 text-xs font-medium rounded-r-lg ${viewMode === 'preview' ? 'bg-[#0284c7] text-white z-10 ring-1 ring-[#0ea5e9]' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-300 border-l-0'} transition-colors duration-200`}>
                             <Eye size={14} className="inline mr-1"/> Preview
                         </button>
                     </div>
@@ -469,27 +474,36 @@ const App: React.FC = () => {
 
             {/* Conditional Rendering based on viewMode */}
             {viewMode === 'edit' ? (
-                <textarea
-                    ref={markdownEditorRef}
-                    value={currentMarkdownContent}
-                    onChange={(e) => setCurrentMarkdownContent(e.target.value)}
-                    placeholder={isExtractingText ? "Extracting & converting PDF, please wait..." : "Extracted Markdown will appear here. Edit or select text."}
-                    className="w-full min-h-[60vh] p-3 border border-slate-300 rounded-md shadow-inner text-sm leading-relaxed focus:ring-2 focus:ring-sky-500 focus:border-sky-500 font-mono"
-                    disabled={isExtractingText}
-                />
+                <div className="relative">
+                    <textarea
+                        ref={markdownEditorRef}
+                        value={currentMarkdownContent}
+                        onChange={(e) => setCurrentMarkdownContent(e.target.value)}
+                        placeholder={isExtractingText ? "Extracting & converting PDF, please wait..." : "Extracted Markdown will appear here. Edit or select text."}
+                        className="w-full min-h-[60vh] p-3 border border-slate-300 rounded-md shadow-inner text-sm leading-relaxed focus:ring-2 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] font-mono scrollbar-thin bg-white/90"
+                        disabled={isExtractingText}
+                    />
+                    {isExtractingText && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-md">
+                        <div className="flex flex-col items-center">
+                          <Loader2 className="animate-spin text-[#0ea5e9] mb-2" size={30}/>
+                          <p className="text-slate-600">Extracting text...</p>
+                        </div>
+                      </div>
+                    )}
+                </div>
             ) : ( // Preview Mode
                 <div 
                     ref={markdownPreviewRef} // Ref for the rendered Markdown container
-                    className="markdown-preview p-4 border border-slate-300 rounded-md bg-white min-h-[60vh] prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none prose-headings:text-sky-800 prose-a:text-sky-600 hover:prose-a:text-sky-700"
-                    // Added Tailwind prose classes for better default Markdown styling
+                    className="markdown-preview p-4 border border-slate-300 rounded-md bg-white min-h-[60vh] prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none prose-headings:text-[#075985] prose-a:text-[#0284c7] hover:prose-a:text-[#0369a1] prose-img:rounded-md prose-img:shadow-md scrollbar-thin overflow-y-auto"
                 >
                     {isExtractingText ? 
-                        <div className="flex flex-col items-center justify-center h-40 text-slate-500"><Loader2 className="animate-spin text-sky-600 mb-2" size={24}/><p>Loading preview...</p></div> :
+                        <div className="flex flex-col items-center justify-center h-40 text-slate-500">
+                          <Loader2 className="animate-spin text-[#0284c7] mb-2" size={24}/>
+                          <p>Loading preview...</p>
+                        </div> :
                      currentMarkdownContent ? 
-                        <ReactMarkdown remarkPlugins={[remarkGfm]} 
-                            // Ensure ReactMarkdown doesn't sanitize away your intended HTML (like <hr>)
-                            // By default, it's quite safe. For custom HTML, use rehypeRaw.
-                        >
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {currentMarkdownContent}
                         </ReactMarkdown> :
                         <p className="text-slate-500 italic text-center py-10">No content to preview. Upload and process a PDF using the 'Load & Edit' section.</p>
@@ -510,19 +524,26 @@ const App: React.FC = () => {
 
 
             {selectedText && ( // Show selection tools only if text is selected
-                <div className="mt-4 p-3 bg-sky-50 border border-sky-200 rounded-md">
-                    <p className="text-sm font-medium text-sky-700">Selected Text for AI Assistance:</p>
-                    <pre className="text-xs text-slate-700 my-1 p-2 bg-white border rounded max-h-24 overflow-y-auto whitespace-pre-wrap"><code>{selectedText}</code></pre>
+                <div className="mt-4 p-3 bg-[#f0f9ff] border border-[#bae6fd] rounded-md shadow-inner animate-pulse-slow">
+                    <p className="text-sm font-medium text-[#0369a1]">Selected Text for AI Assistance:</p>
+                    <pre className="text-xs text-slate-700 my-1 p-2 bg-white border rounded max-h-24 overflow-y-auto whitespace-pre-wrap scrollbar-thin"><code>{selectedText}</code></pre>
                     <div className="flex items-center space-x-2 mt-2">
                         <button 
                             onClick={handleGetAIAssistance} 
                             disabled={isLoading || !selectedText.trim()}
-                            className="py-2 px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-md shadow-sm disabled:bg-slate-400 transition-colors flex-grow flex items-center justify-center"
+                            className="py-2 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium rounded-md shadow-sm disabled:opacity-70 disabled:bg-slate-400 disabled:from-slate-400 disabled:to-slate-400 transition-all duration-200 flex-grow flex items-center justify-center transform hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none"
                         >
-                           {(isLoading && !apiMessage?.text.includes('Initializing backend')) ? <Loader2 className="inline mr-2 h-4 w-4 animate-spin"/> : <MessageSquare size={16} className="mr-2"/>}
+                           {(isLoading && !apiMessage?.text.includes('Initializing backend')) ? 
+                             <Loader2 className="inline mr-2 h-4 w-4 animate-spin"/> : 
+                             <MessageSquare size={16} className="mr-2"/>
+                           }
                            Get AI Suggestions
                         </button>
-                        <button onClick={clearCurrentSelection} title="Clear selection" className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-md shadow-sm">
+                        <button 
+                          onClick={clearCurrentSelection} 
+                          title="Clear selection" 
+                          className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-md shadow-sm hover:shadow transition-all duration-200"
+                        >
                             <Scissors size={16}/>
                         </button>
                     </div>
@@ -538,7 +559,7 @@ const App: React.FC = () => {
         onAcceptSuggestion={handleAcceptSuggestion}
         onRejectSuggestion={handleRejectSuggestion}
         isLoading={isLoading && !apiMessage?.text.includes('Initializing backend')}
-        className="w-full md:w-[450px] md:min-w-[400px] lg:w-[500px] lg:min-w-[450px] h-screen md:max-h-screen overflow-y-auto" 
+        className="w-full md:w-[450px] md:min-w-[400px] lg:w-[500px] lg:min-w-[450px] h-screen md:max-h-screen overflow-y-auto scrollbar-thin animate-slide-in-right" 
       />
     </div>
   );

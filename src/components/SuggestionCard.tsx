@@ -2,7 +2,9 @@
 import React, { useState } from 'react';
 import { diffWordsWithSpace } from 'diff'; // Using 'diff' library
 import type { ValidatedSuggestionPackage } from '../services/api';
-import { ThumbsUp, ThumbsDown, ChevronDown, ChevronUp} from 'lucide-react';
+import { ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface SuggestionCardProps {
   suggestionPackage: ValidatedSuggestionPackage;
@@ -33,42 +35,44 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({ suggestionPackage, onAc
   const isccaReport = suggestionPackage.iscca_report || {};
 
   const originalText = suggDetails.original_text || "N/A (Original text not provided in suggestion)";
-  const proposedText = suggDetails.proposed_text || "";
-
-  return (
-    <div className="suggestion-card-container bg-white border border-slate-200 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow">
+  const proposedText = suggDetails.proposed_text || "";  return (
+    <div className="suggestion-card-container bg-white border border-slate-200 rounded-lg p-4 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 group">
       <div className="flex justify-between items-start mb-2">
         <div>
-            <p className="text-xs text-sky-700 font-semibold bg-sky-100 px-2 py-0.5 rounded-full inline-block">
+            <p className="text-xs text-[#0369a1] font-semibold bg-[#e0f2fe] px-2.5 py-0.5 rounded-full inline-block">
                 Source: {suggestionPackage.source_agent_name || 'Unknown Agent'}
             </p>
             <p className="text-xs text-slate-500 mt-1">Type: {suggDetails.change_type || 'N/A'}</p>
         </div>
         <button 
             onClick={() => setShowDetails(!showDetails)} 
-            className="text-slate-500 hover:text-sky-600 p-1"
+            className="text-slate-500 hover:text-[#0284c7] p-1 rounded-full hover:bg-[#f0f9ff] transition-colors"
             title={showDetails ? "Hide Details" : "Show Details"}
         >
             {showDetails ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
         </button>
       </div>
-      
-      <h5 className="text-sm font-medium text-slate-700 mb-1">Proposed Change:</h5>
+        <h5 className="text-sm font-medium text-slate-700 mb-1">Proposed Change (Diff):</h5>
       <div 
         dangerouslySetInnerHTML={{ __html: generateTextDiffHtml(originalText, proposedText) }}
-        className="diff-view border border-slate-300 p-2.5 rounded bg-slate-50 max-h-48 overflow-y-auto text-sm leading-relaxed"
+        className="diff-view border border-slate-300 p-2.5 rounded bg-slate-50 max-h-48 overflow-y-auto text-sm leading-relaxed scrollbar-thin"
       />
-
-      <div className="mt-3 flex space-x-2">
+      
+      <h5 className="text-sm font-medium text-slate-700 mt-3 mb-1">Markdown Preview:</h5>
+      <div className="border border-slate-300 p-2.5 rounded bg-slate-50 max-h-48 overflow-y-auto text-sm prose prose-sm max-w-none scrollbar-thin">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {proposedText}
+        </ReactMarkdown>
+      </div>      <div className="mt-3 flex space-x-2">
         <button 
             onClick={onAccept} 
-            className="flex items-center text-xs px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-md shadow-sm"
+            className="flex items-center text-xs px-3 py-1.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-md shadow-sm transition-colors duration-200 transform hover:-translate-y-0.5 active:translate-y-0"
         >
             <ThumbsUp size={14} className="mr-1" /> Accept
         </button>
         <button 
             onClick={onReject} 
-            className="flex items-center text-xs px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm"
+            className="flex items-center text-xs px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-md shadow-sm transition-colors duration-200 transform hover:-translate-y-0.5 active:translate-y-0"
         >
             <ThumbsDown size={14} className="mr-1" /> Reject
         </button>

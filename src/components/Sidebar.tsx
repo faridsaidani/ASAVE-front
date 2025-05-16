@@ -39,35 +39,39 @@ const Sidebar: React.FC<SidebarProps> = ({
   onRejectSuggestion,
   isLoading,
   className = ''
-}) => {
-  return (
-    <aside className={`sidebar w-[400px] min-w-[350px] p-5 border-l border-slate-300 h-full overflow-y-auto bg-white shadow-lg ${className}`}>
-      <h3 className="text-xl font-semibold text-slate-700 mb-4 flex items-center">
-        <Bot size={24} className="mr-2 text-sky-600" /> ASAVE AI Assistant
+}) => {  return (
+    <aside className={`sidebar w-[400px] min-w-[350px] p-5 border-l border-slate-300 h-full overflow-y-auto bg-white shadow-lg scrollbar-thin animate-slide-in-right ${className}`}>
+      <h3 className="text-xl font-semibold text-[#0369a1] mb-4 flex items-center border-b pb-3 border-slate-200">
+        <Bot size={24} className="mr-2 text-[#0284c7]" /> ASAVE AI Assistant
       </h3>
       
-      <div className="progress-log mb-6 max-h-[40vh] overflow-y-auto border border-slate-200 rounded-md p-3 bg-slate-50 text-sm shadow-inner">
-        <h4 className="text-md font-medium text-slate-600 mb-2">⚙️ Processing Log:</h4>
+      <div className="progress-log mb-6 max-h-[40vh] overflow-y-auto border border-slate-200 rounded-md p-3 bg-slate-50 text-sm shadow-inner scrollbar-thin">
+        <h4 className="text-md font-medium text-slate-600 mb-3 flex items-center">
+          <span className="inline-flex items-center justify-center w-5 h-5 mr-2 rounded-full bg-[#e0f2fe] text-[#075985] text-xs">⚙️</span>
+          Processing Log
+        </h4>
         {isLoading && progressLog.length === 0 && <p className="text-slate-500 italic">Initializing analysis...</p>}
         {progressLog.map((log, index) => (
-          <div key={index} className="mb-1 pb-1 border-b border-slate-100 last:border-b-0 text-xs leading-relaxed">
+          <div key={index} className="mb-1.5 pb-1.5 border-b border-slate-100 last:border-b-0 text-xs leading-relaxed">
             <span className="align-middle">{getIconForStep(log)}</span>
             <span className="font-medium text-slate-700">{log.agent_name || log.step_code || log.event_type}: </span>
-            <span className="text-slate-600">{log.message}</span>
-            {log.payload && typeof log.payload === 'object' && Object.keys(log.payload).length > 0 && (
+            <span className="text-slate-600">{log.message}</span>            {log.payload && typeof log.payload === 'object' && Object.keys(log.payload).length > 0 && (
                  <details className="mt-1">
-                    <summary className="text-xs text-slate-500 cursor-pointer hover:text-sky-600">Toggle Details</summary>
-                    <pre className="text-xs whitespace-pre-wrap break-all bg-slate-100 p-1.5 rounded mt-1 max-h-28 overflow-y-auto">{JSON.stringify(log.payload, null, 2)}</pre>
+                    <summary className="text-xs text-slate-500 cursor-pointer hover:text-[#0284c7]">Toggle Details</summary>
+                    <pre className="text-xs whitespace-pre-wrap break-all bg-slate-100 p-1.5 rounded mt-1 max-h-28 overflow-y-auto scrollbar-thin">{JSON.stringify(log.payload, null, 2)}</pre>
                  </details>
             )}
           </div>
         ))}
-        {isLoading && <p className="text-sky-600 italic mt-2">Thinking... 🤔</p>}
+        {isLoading && <p className="text-[#0284c7] italic mt-2 animate-pulse">Thinking... 🤔</p>}
         {!isLoading && progressLog.length > 0 && progressLog[progressLog.length -1]?.event_type !== 'final_summary' && <p className="text-slate-500 italic mt-2">Waiting for next step or completion...</p>}
       </div>
 
       <hr className="my-4 border-slate-300" />
-      <h4 className="text-md font-medium text-slate-600 mb-3">💡 Suggestions:</h4>
+      <h4 className="text-md font-medium text-slate-600 mb-3 flex items-center">
+        <span className="inline-flex items-center justify-center w-5 h-5 mr-2 rounded-full bg-[#e0f2fe] text-[#075985] text-xs">💡</span>
+        Suggestions
+      </h4>
       {suggestions && suggestions.length > 0 ? (
         <div className="space-y-4">
           {suggestions.map((suggPackage, index) => (

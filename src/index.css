@@ -1,10 +1,49 @@
 @import "tailwindcss";
-/* src/index.css */
 
+/* Global focus style for accessibility */
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #0ea5e9, 0 0 0 4px rgba(255, 255, 255, 0.8);
+  border-radius: 0.25rem;
+  transition: box-shadow 0.2s ease-in-out;
+}
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
 
-/* Add any global custom base styles here if needed */
-body {
-  background-color: #f8fafc; /* Tailwind bg-slate-50 */
-  color: #1e293b;            /* Tailwind text-slate-800 */
-  font-family: 'Inter', sans-serif; /* Example font */
+.animate-slide-in-right {
+  animation: slideInRight 0.4s ease-out;
+}
+
+/* Custom scrollbar styles */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 0.375rem;
+  height: 0.375rem;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:active {
+  background-color: #64748b;
 }
