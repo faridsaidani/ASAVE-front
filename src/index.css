@@ -47,3 +47,32 @@
 .scrollbar-thin::-webkit-scrollbar-thumb:active {
   background-color: #64748b;
 }
+
+/* Button styling */
+.btn-primary {
+  @apply py-2 px-4 bg-gradient-to-r from-sky-600 to-sky-500 hover:from-sky-700 hover:to-sky-600 text-white font-medium rounded-md shadow-sm disabled:bg-slate-400 disabled:from-slate-400 disabled:to-slate-400 transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none;
+}
+
+.btn-primary-small { 
+  @apply py-1.5 px-3 bg-gradient-to-r from-sky-600 to-sky-500 hover:from-sky-700 hover:to-sky-600 text-white text-sm font-medium rounded shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0;
+}
+
+.btn-secondary-small { 
+  @apply py-1.5 px-3 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm font-medium rounded shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200;
+}
+
+.btn-teal { 
+  @apply py-2 px-4 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white font-medium rounded-md shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none;
+}
+
+.btn-toggle { 
+  @apply py-1 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-md border border-slate-300 transition-colors duration-200;
+}
+
+.btn-toggle-active { 
+  @apply py-1 px-3 bg-sky-600 text-white text-sm font-medium rounded-md border border-sky-600 shadow-inner;
+}
+
+.input-field { 
+  @apply mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-sky-500 focus:border-sky-500 sm:text-sm;
+}
