@@ -1,0 +1,10 @@
+@import "tailwindcss";
+/* src/index.css */
+
+
+/* Add any global custom base styles here if needed */
+body {
+  background-color: #f8fafc; /* Tailwind bg-slate-50 */
+  color: #1e293b;            /* Tailwind text-slate-800 */
+  font-family: 'Inter', sans-serif; /* Example font */
+}
