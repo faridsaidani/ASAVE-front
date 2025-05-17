@@ -11,11 +11,13 @@ export interface InitResponse {
   ss_vector_store_status?: string;
   num_aisga_variants?: number;
   num_specialized_agents?: number;
+  session_id?: string;
 }
 
 export interface ApiStatusResponse {
   service_status: string;
   asave_initialized: boolean;
+  current_session_id?: string;
   config?: {
     google_api_key_set?: boolean;
     [key: string]: any;
@@ -25,33 +27,28 @@ export interface ApiStatusResponse {
   };
 }
 
-// SSE Event Data Structures (examples, align with your backend)
-export interface ProgressEventPayload {
-  step_code?: string;
-  agent_name?: string;
-  message: string;
-  payload?: any;
-}
-
-export interface ValidatedSuggestionPackage {
-  source_agent_type: string;
-  source_agent_name: string;
-  suggestion_details: {
+export interface SuggestionDetails {
     original_text: string;
     proposed_text: string;
     change_type: string;
     reasoning: string;
     shariah_notes: string;
     prompt_details_actual?: any;
-  };
-  scva_report: any; // Define more specific types if possible
-  iscca_report: any; // Define more specific types if possible
+    confidence_score?: number;
+}
+
+export interface ValidatedSuggestionPackage {
+  source_agent_type: string;
+  source_agent_name: string;
+  suggestion_details: SuggestionDetails;
+  scva_report: any; 
+  iscca_report: any; 
   validation_summary_score: string;
 }
 
 export interface SSEEventData {
-  event_type: "system_log" | "progress" | "agent_suggestion_generated" | "validated_suggestion_package" | "warning" | "error" | "fatal_error" | "final_summary";
-  message: string;
+  event_type: "system_log" | "progress" | "agent_suggestion_generated" | "validated_suggestion_package" | "warning" | "error" | "fatal_error" | "final_summary" | "clause_processing_start" | "clause_validation_result" | "clause_ai_suggestion_generated" | "clause_processing_end" | "full_contract_review_completed";
+  message?: string; 
   step_code?: string;
   agent_name?: string;
   payload?: any | ValidatedSuggestionPackage | { total_validated_suggestions: number };
@@ -80,4 +77,10 @@ export const getApiStatus = async (): Promise<ApiStatusResponse> => {
         console.error("Error fetching API status:", error.response?.data || error.message);
         throw error.response?.data || new Error("Network or status fetch error");
     }
+};
+
+// Add other API functions if needed (e.g., for contextual update agent)
+export const analyzeContextualUpdate = async (payload: { new_context_text: string; target_document_id: string; }) => { // <--- ADDED EXPORT HERE
+    const response = await axios.post(`${API_BASE_URL}/contextual_update/analyze`, payload);
+    return response.data; 
 };
