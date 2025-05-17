@@ -1,7 +1,7 @@
 // src/components/Sidebar.tsx
 import React, { useEffect, useState, useMemo } from 'react';
 import SuggestionCard from './SuggestionCard';
-import type { SSEEventData, ValidatedSuggestionPackage } from '../services/api';
+import type { SSEEventData, ValidatedSuggestionPackage } from '../types';
 import { Bot, CircleDashed, CheckCircle2, AlertTriangle, XCircle, Clock, Shield, ArrowRight } from 'lucide-react';
 
 interface SidebarProps {
@@ -208,7 +208,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             {logGroups.map((group, groupIndex) => {
               const isExpanded = expandedStages.has(group.stageName);
               const isLastActive = !group.isComplete && groupIndex === logGroups.findIndex(g => !g.isComplete);
-              const showExpandedByDefault = isLastActive || group.hasErrors;
               
               // Status indicator
               let statusBg = "bg-slate-100";

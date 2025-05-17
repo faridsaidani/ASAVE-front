@@ -3,56 +3,8 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+import type { InitResponse, ApiStatusResponse, SrmaFileMetadata, SrmaResponse } from '../types'; // Adjust the import path as needed
 
-export interface InitResponse {
-  status: string;
-  message: string;
-  fas_vector_store_status?: string;
-  ss_vector_store_status?: string;
-  num_aisga_variants?: number;
-  num_specialized_agents?: number;
-  session_id?: string;
-}
-
-export interface ApiStatusResponse {
-  service_status: string;
-  asave_initialized: boolean;
-  current_session_id?: string;
-  config?: {
-    google_api_key_set?: boolean;
-    [key: string]: any;
-  };
-  components_loaded?: {
-    [key: string]: boolean | number;
-  };
-}
-
-export interface SuggestionDetails {
-    original_text: string;
-    proposed_text: string;
-    change_type: string;
-    reasoning: string;
-    shariah_notes: string;
-    prompt_details_actual?: any;
-    confidence_score?: number;
-}
-
-export interface ValidatedSuggestionPackage {
-  source_agent_type: string;
-  source_agent_name: string;
-  suggestion_details: SuggestionDetails;
-  scva_report: any; 
-  iscca_report: any; 
-  validation_summary_score: string;
-}
-
-export interface SSEEventData {
-  event_type: "system_log" | "progress" | "agent_suggestion_generated" | "validated_suggestion_package" | "warning" | "error" | "fatal_error" | "final_summary" | "clause_processing_start" | "clause_validation_result" | "clause_ai_suggestion_generated" | "clause_processing_end" | "full_contract_review_completed";
-  message?: string; 
-  step_code?: string;
-  agent_name?: string;
-  payload?: any | ValidatedSuggestionPackage | { total_validated_suggestions: number };
-}
 
 
 export const initializeSystem = async (formData: FormData): Promise<InitResponse> => {
@@ -83,4 +35,29 @@ export const getApiStatus = async (): Promise<ApiStatusResponse> => {
 export const analyzeContextualUpdate = async (payload: { new_context_text: string; target_document_id: string; }) => { // <--- ADDED EXPORT HERE
     const response = await axios.post(`${API_BASE_URL}/contextual_update/analyze`, payload);
     return response.data; 
+};
+
+export const mineShariahRules = async (filesWithMetadata: SrmaFileMetadata[]): Promise<SrmaResponse> => {
+  const formData = new FormData();
+  filesWithMetadata.forEach((item, index) => {
+    formData.append('ss_files_for_srma', item.file, item.file.name);
+    formData.append(`ss_files_for_srma_${index}_fullname`, item.fullName);
+    formData.append(`ss_files_for_srma_${index}_shortcode`, item.shortCode);
+  });
+
+  // Optional: allow user to specify output_directory if needed, or use backend default
+  // formData.append('output_directory', 'custom_srma_output');
+
+  try {
+    const response = await axios.post<SrmaResponse>(`${API_BASE_URL}/mine_shariah_rules`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error("Error mining Shari'ah rules:", error.response?.data || error.message);
+    return {
+        status: 'error',
+        message: error.response?.data?.message || "Network error or SRMA processing failed.",
+    };
+  }
 };
