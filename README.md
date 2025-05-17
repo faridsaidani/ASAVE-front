@@ -1,155 +1,131 @@
-# 🚀 ASAVE Text-Based Assistant
+# ASAVE Interactive Suite - Frontend
 
-A modern, AI-powered web application for extracting, editing, and enhancing text from FAS/SS PDF documents, built with **React**, **TypeScript**, and **Vite**. This project is designed for Shariah-compliant document workflows, providing Markdown extraction, AI suggestions, and a beautiful, responsive UI.
+This frontend application provides an interactive user interface for the ASAVE (AI-Powered Shari'ah Audit & Verification Engine) system. It enables users to interact with AI agents for tasks related to AAOIFI standards enhancement, Shari'ah contract verification, document processing, and rule mining.
 
----
+Built with **React, TypeScript, Vite, and Tailwind CSS**.
 
-## ✨ Features
+## Features
 
-- **PDF to Markdown Extraction**: Upload FAS/SS PDFs and extract clean, editable Markdown (with image support).
-- **AI Assistance**: Select text and get AI-powered suggestions for improvements, compliance, or reformatting.
-- **Live Markdown Editing & Preview**: Toggle between raw Markdown editing and a styled preview.
-- **Image Handling**: Extracted images are referenced as web URLs for easy display (requires backend support).
-- **Backend Initialization**: Upload multiple FAS/SS PDFs and optional rules to initialize the backend knowledge base.
-- **Progress & Logs Sidebar**: See real-time logs, AI suggestion cards, and accept/reject changes.
-- **Modern UI**: Built with Tailwind CSS, Lucide icons, and responsive layouts.
+- **Multi-Page Interface**:
+  - **Chat/Home**: General interaction and landing page for simple commands.
+  - **Standards Enhancement**: Load, edit, and receive AI-powered suggestions for Financial Accounting Standards (FAS) documents.
+    - Markdown editor with preview.
+    - Text selection for targeted AI assistance.
+    - AI suggestions with diff view, reasoning, confidence scores, and validation reports (SCVA & ISCCA).
+    - Accept/Reject suggestions directly in the editor.
+    - Document versioning (save, list, revert).
+  - **Contract Suite**: Tools for Shari'ah compliance checking of contracts.
+    - Clause-by-clause validation and AI suggestion generation.
+    - Full contract text review with detailed AI reports.
+- **System Initialization & Session Management**:
+  - Upload FAS, Shari'ah Standards (SS), and explicit Shari'ah rule files to initialize or update the backend knowledge base.
+  - Select files from a pre-configured server-side PDF library.
+  - Create and save named sessions for different projects or knowledge base configurations.
+  - Load existing sessions.
+- **AI-Powered Tools (Right Sidebar & Modals)**:
+  - **Contextual Update Analysis (CUA)**: Analyze the impact of new external information (news, guidelines) on a target FAS document.
+  - **Shari'ah Rule Miner (SRMA)**: Upload Shari'ah Standard PDFs, provide metadata, and trigger backend rule mining.
+- **Real-time Progress & Feedback**:
+  - Server-Sent Events (SSE) for streaming updates during long-running AI processes.
+  - Notifications and messages for API interactions and system status.
+- **Responsive Design**: Tailwind CSS for a modern, adaptable UI.
 
----
+## Core Technologies
 
-## 🏗️ Project Structure
+- **React**: UI library.
+- **TypeScript**: Static typing.
+- **Vite**: Fast build tool and dev server.
+- **Tailwind CSS**: Utility-first CSS framework.
+- **`react-router-dom`**: Client-side routing.
+- **`axios`**: HTTP requests.
+- **`lucide-react`**: Icons.
+- **`react-markdown` & `remark-gfm`**: Markdown rendering.
+- **`diff`**: Text difference generation.
 
-```
-frontend/
-├── public/                # Static assets (pdf.worker, icons, etc.)
-├── src/
-│   ├── App.tsx            # Main React app (core logic)
-│   ├── components/
-│   │   ├── FileUploader.tsx
-│   │   ├── Sidebar.tsx
-│   │   └── SuggestionCard.tsx
-│   ├── services/
-│   │   └── api.ts         # API types and helpers
-│   ├── assets/            # Images, SVGs
-│   ├── index.css          # Tailwind & global styles
-│   └── main.tsx           # App entry point
-├── package.json           # Dependencies & scripts
-├── tailwind.config.js     # Tailwind CSS config
-├── vite.config.ts         # Vite config
-└── ...
-```
-
----
-
-## ⚡ Getting Started
-
-### 1. Prerequisites
-- [Node.js](https://nodejs.org/) (v18+ recommended)
-- [Yarn](https://yarnpkg.com/) or [npm](https://www.npmjs.com/)
-
-### 2. Install Dependencies
-
-```sh
-npm install
-# or
-yarn install
-```
-
-### 3. Configure Environment
-
-- Copy `.env` if needed and set your backend API URL:
+## Project Structure
 
 ```
-VITE_API_BASE_URL=http://localhost:5001
+/src/
+├── App.tsx                # Root component with Router logic & global state
+├── main.tsx               # Entry point, renders App
+├── index.css              # Global styles & Tailwind directives
+├── App.css                # (Legacy or Vite default styles)
+├── vite-env.d.ts          # Vite environment types
+├── assets/                # Static assets (SVGs, etc.)
+├── components/            # Reusable UI components
+│   ├── FileUploader.tsx
+│   ├── SuggestionCard.tsx
+│   ├── LeftSidebar.tsx
+│   ├── RightSidebar.tsx
+│   ├── FasEditorPage.tsx  # Core editor (used by StandardsEnhancementPage)
+│   ├── Modal.tsx
+│   └── SrmaModal.tsx
+├── layouts/
+│   └── MainLayout.tsx     # Common layout (header, sidebars, outlet)
+├── pages/                 # Route-specific page components
+│   ├── StandardsEnhancementPage.tsx
+│   ├── ContractVerificationPage.tsx
+│   └── ChatPage.tsx
+├── services/
+│   └── api.ts             # API functions and type definitions
+├── types.ts               # Shared TypeScript types
+└── utils/
+    └── uiHelpers.ts       # UI utility functions
 ```
 
-### 4. Start the Development Server
+## Getting Started
 
-```sh
-npm run dev
-# or
-yarn dev
-```
+1. **Prerequisites**:
+   - Node.js (16.x or higher)
+   - npm or yarn
 
-- App will be available at [http://localhost:5173](http://localhost:5173) (default Vite port).
+2. **Clone the repository** (if applicable).
 
-### 5. Build for Production
+3. **Navigate to the frontend directory**:
+   ```bash
+   cd path/to/your/frontend
+   ```
 
-```sh
-npm run build
-```
+4. **Install dependencies**:
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
 
----
+5. **Configure Environment Variables**:
+   - Create a `.env` file in the frontend root.
+   - Add the backend API base URL:
+     ```env
+     VITE_API_BASE_URL=http://localhost:5001
+     ```
+     (Adjust if your backend runs on a different port or host.)
 
-## 🧩 Key Components
+6. **Run the development server**:
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   ```
+   The app usually starts on `http://localhost:5173` (or another port if 5173 is busy).
 
-- **App.tsx**: Main logic for file upload, PDF extraction, AI assistance, Markdown editing/preview, and state management.
-- **FileUploader.tsx**: Reusable drag-and-drop file uploader.
-- **Sidebar.tsx**: Displays progress logs and AI suggestions.
-- **SuggestionCard.tsx**: Shows AI suggestion details, Markdown diff, and accept/reject actions.
-- **api.ts**: TypeScript types and API helper functions.
+7. **Ensure the Backend is Running**: The frontend relies on the ASAVE backend API (Python/Flask). Make sure the backend server is running and accessible at the URL specified in `VITE_API_BASE_URL`.
 
----
+## Key Components & Logic Flow
 
-## 🤖 AI Assistance Workflow
+- **`App.tsx`**: Manages global state (system initialization, session info, library PDFs, global modals) and sets up main routes.
+- **`MainLayout.tsx`**: Provides page structure (header, navigation, sidebars) and uses `<Outlet />` for active page content.
+- **Page Components**:
+  - `ChatPage`, `StandardsEnhancementPage`, `ContractVerificationPage`: Each handles UI and logic for its feature set, receiving global state and helpers from `App.tsx`.
+    - `StandardsEnhancementPage`: FAS document editing, PDF loading, Markdown editing, AI suggestions panel.
+    - `ContractVerificationPage`: Forms for contract clause/full text submission, displays streamed results.
+- **`api.ts`**: Backend API interaction functions and TypeScript interfaces.
+- **Modals**: For complex inputs (System Initialization, Contextual Update, SRMA). Controlled by `activeModal` state in `App.tsx`.
+- **SSE Handling**: Long-running AI tasks use Server-Sent Events for real-time progress/results, with `AbortController` for cancellation.
 
-1. **Upload PDF**: Select a FAS/SS PDF to extract Markdown.
-2. **Edit/Preview**: Edit the Markdown or preview the formatted document.
-3. **Select Text**: Highlight a section to get AI suggestions.
-4. **Get Suggestions**: Click "Get AI Suggestions" to receive improvement proposals.
-5. **Accept/Reject**: Apply suggestions directly or copy them for manual use.
+## Development Notes
 
----
-
-## 🖼️ Image Handling
-
-- Extracted images are referenced in Markdown as web URLs (e.g., `![](http://localhost:5001/marker_images_static/UNIQUE_PDF_ID/image.jpeg)`).
-- Backend must serve these images from a static folder for them to display in the preview.
-
----
-
-## 🛠️ Tech Stack
-
-- ⚛️ **React** + **TypeScript**
-- ⚡ **Vite** (fast dev/build)
-- 🎨 **Tailwind CSS** (with typography plugin)
-- 🦄 **Lucide Icons**
-- 📝 **react-markdown** + **remark-gfm** (GitHub-flavored Markdown)
-- 🔗 **Axios** (API calls)
-- 🧠 **diff** (text diffing for suggestions)
-
----
-
-## 📂 Environment Variables
-
-- `VITE_API_BASE_URL`: Backend API endpoint (default: `http://localhost:5001`)
-
----
-
-## 🧑‍💻 Development Notes
-
-- Lint with `npm run lint` (ESLint + TypeScript)
-- Tailwind CSS is used for all styling; customize in `tailwind.config.js`.
-- All API types and SSE event structures are defined in `src/services/api.ts`.
-- For best results, ensure your backend implements the required endpoints and static image serving.
-
----
-
-## 📝 License
-
-This project is for internal or research use. See individual file headers or contact the author for licensing details.
-
----
-
-## 🙏 Acknowledgements
-
-- [Vite](https://vitejs.dev/)
-- [React](https://react.dev/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Lucide Icons](https://lucide.dev/)
-- [react-markdown](https://github.com/remarkjs/react-markdown)
-
----
-
-## 💬 Feedback & Contributions
-
-Feel free to open issues or suggest improvements!
+- The app depends on the backend being available and correctly configured (especially `GOOGLE_API_KEY` for AI agents).
+- Styling uses Tailwind CSS utility classes.
+- Type safety via interfaces/types in `src/types.ts` and `src/services/api.ts`.
+- Error handling and user feedback through notifications and component messages.
