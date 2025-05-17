@@ -54,11 +54,26 @@ interface ClauseValidationPayload { // Expected from SSE for validation of origi
 interface ClauseAiSuggestionPayload extends ValidatedSuggestionPackage { // For AI's suggestion on a clause
     clause_id: string;
 }
-interface ClauseSkippedPayload {
-    clause_id: string;
-    original_text: string;
-    reason: string;
+// interface ClauseSkippedPayload {
+//     clause_id: string;
+//     original_text: string;
+//     reason: string;
+// }
+
+interface LibraryPdfItem {
+  name: string;
+  type: "file" | "directory"; // And potentially 'directory' if backend lists them
+  path?: string; // For files within directories: "dirname/filename.pdf"
+  files?: string[]; // For directories
 }
+interface SessionInfo {
+  session_id: string;
+  path: string;
+  has_fas_db: boolean;
+  has_ss_db: boolean;
+  last_modified: string;
+}
+
 
 interface FullContractReviewReport {
     overall_assessment: string;
@@ -160,6 +175,17 @@ const App: React.FC = () => {
   const [apiMessage, setApiMessage] = useState<{type: 'info' | 'success' | 'error' | 'warning', text: string} | null>(null);
   const sseControllerRef = useRef<AbortController | null>(null);
 
+  const [libraryPdfs, setLibraryPdfs] = useState<LibraryPdfItem[]>([]);
+  const [selectedLibraryFas, setSelectedLibraryFas] = useState<string[]>([]); // Filenames
+  const [selectedLibrarySs, setSelectedLibrarySs] = useState<string[]>([]);   // Filenames
+  
+  const [availableSessions, setAvailableSessions] = useState<SessionInfo[]>([]);
+  const [selectedSessionToLoad, setSelectedSessionToLoad] = useState<string>('');
+  const [newSessionName, setNewSessionName] = useState<string>('');
+  const [overwriteSession, setOverwriteSession] = useState<boolean>(false);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+
+
   // Check API status on initial load
   useEffect(() => { /* ... same as before ... */ 
     const checkInitialApiStatus = async () => {
@@ -218,17 +244,53 @@ const App: React.FC = () => {
     setIsExtractingText(false);
   };
 
-  // --- Text Selection Logic (Combined for FAS Editor) ---
-  useEffect(() => { /* ... same as before ... */ 
-    if (currentAppView !== 'fas_editor') return; // Only attach for FAS editor
-    const editor = markdownEditorRef.current; const previewArea = markdownPreviewRef.current;
-    let selectionHandler: (() => void) | null = null;
-    const clearPreviousListeners = () => { /* ... */ }; clearPreviousListeners();
-    if (fasEditorViewMode === 'edit' && editor) { /* ... */ }
-    else if (fasEditorViewMode === 'preview' && previewArea) { /* ... */ }
-    else { setSelectedText(''); }
-    return clearPreviousListeners;
-  }, [currentAppView, fasEditorViewMode, currentMarkdownContent]); // Re-run if view or content changes
+  // // --- Text Selection Logic (Combined for FAS Editor) ---
+  // useEffect(() => { /* ... same as before ... */ 
+  //   if (currentAppView !== 'fas_editor') return; // Only attach for FAS editor
+  //   const editor = markdownEditorRef.current; const previewArea = markdownPreviewRef.current;
+  //   let selectionHandler: (() => void) | null = null;
+  //   const clearPreviousListeners = () => { /* ... */ }; clearPreviousListeners();
+  //   if (fasEditorViewMode === 'edit' && editor) { /* ... */ }
+  //   else if (fasEditorViewMode === 'preview' && previewArea) { /* ... */ }
+  //   else { setSelectedText(''); }
+  //   return clearPreviousListeners;
+  // }, [currentAppView, fasEditorViewMode, currentMarkdownContent]); // Re-run if view or content changes
+
+  useEffect(() => {
+    const editor = markdownEditorRef.current;
+    const previewArea = markdownPreviewRef.current;
+
+    if (fasEditorViewMode === 'edit' && editor) {
+      const updateSelectionFromTextarea = () => {
+        const selected = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+        if(selected.trim()){ setSelectedText(selected.trim()); }
+      };
+      editor.addEventListener('select', updateSelectionFromTextarea);
+      editor.addEventListener('keyup', updateSelectionFromTextarea);
+      editor.addEventListener('mouseup', updateSelectionFromTextarea);
+      // Add focus to re-check selection when editor gets focus
+      editor.addEventListener('focus', updateSelectionFromTextarea); 
+      return () => {
+        editor.removeEventListener('select', updateSelectionFromTextarea);
+        editor.removeEventListener('keyup', updateSelectionFromTextarea);
+        editor.removeEventListener('mouseup', updateSelectionFromTextarea);
+        editor.removeEventListener('focus', updateSelectionFromTextarea);
+      };
+    } else if (fasEditorViewMode === 'preview' && previewArea) {
+      // For preview, rely on a global-like mouseup if selection is within the preview area
+      const handlePreviewMouseUp = () => {
+        const selection = window.getSelection();
+        const selected = selection?.toString().trim();
+        if (selected && selection?.anchorNode && previewArea.contains(selection.anchorNode)) {
+            setSelectedText(selected);
+        }
+      };
+      document.addEventListener('mouseup', handlePreviewMouseUp); // More general for rendered content
+      return () => {
+        document.removeEventListener('mouseup', handlePreviewMouseUp);
+      };
+    }
+  }, [fasEditorViewMode]);
 
 
   const clearCurrentSelection = () => { /* ... same as before ... */ 
@@ -280,6 +342,28 @@ const App: React.FC = () => {
     finally { setIsLoading(false); if (onFinally) onFinally(); }
   }, []);
 
+    const handleExportMarkdown = () => {
+      if (!currentMarkdownContent) {
+        setApiMessage({type: 'warning', text: "No Markdown content to export."});
+        return;
+      }
+      const filename = currentDocumentId ? `${currentDocumentId.replace('.pdf', '') || 'document'}.md` : 'asave_export.md';
+      const blob = new Blob([currentMarkdownContent], { type: 'text/markdown;charset=utf-8;' });
+      const link = document.createElement("a");
+      if (link.download !== undefined) { // feature detection
+          const url = URL.createObjectURL(blob);
+          link.setAttribute("href", url);
+          link.setAttribute("download", filename);
+          link.style.visibility = 'hidden';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          setApiMessage({type: 'success', text: `Markdown file '${filename}' download initiated.`});
+      } else {
+          setApiMessage({type: 'error', text: "Markdown export not supported by your browser (link.download undefined)."});
+      }
+  };
 
   const handleGetAIAssistanceForFAS = () => { /* ... same as before, uses startSSEProcessing ... */ 
     if (!selectedText.trim()) { setApiMessage({type: 'error', text: "Please select text."}); return; }
@@ -377,9 +461,153 @@ const App: React.FC = () => {
     setApiMessage({type: 'info', text: 'Sample Salam Contract loaded into fields.'});
   };
 
+  const fetchLibraryPdfs = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/list_library_pdfs`);
+      if (response.data.status === 'success') {
+        setLibraryPdfs(response.data.pdf_files);
+        setApiMessage({type: 'info', text: `Found ${response.data.pdf_files.length} items in PDF library.`});
+      } else {
+        setApiMessage({type: 'error', text: `Failed to list library PDFs: ${response.data.message}`});
+      }
+    } catch (error: any) {
+      setApiMessage({type: 'error', text: `Error fetching library PDFs: ${error.message}`});
+    }
+  };
 
-  const handleAcceptFASSuggestion = (suggPack: ValidatedSuggestionPackage) => {/* ... */};
-  const handleRejectFASSuggestion = (suggPack: ValidatedSuggestionPackage) => {/* ... */};
+  const fetchSessions = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/list_sessions`);
+      if (response.data.status === 'success') {
+        setAvailableSessions(response.data.sessions);
+      } else {
+        setApiMessage({type: 'error', text: `Failed to list sessions: ${response.data.message}`});
+      }
+    } catch (error: any) {
+      setApiMessage({type: 'error', text: `Error fetching sessions: ${error.message}`});
+    }
+  };
+
+  // Call these on component mount or when needed
+  useEffect(() => {
+    fetchLibraryPdfs();
+    fetchSessions();
+  }, []);
+
+  const handleInitializeModified = async () => {
+    // This function now needs to decide whether to:
+    // 1. Load an existing session.
+    // 2. Create a new session with uploaded files and/or library files.
+    // 3. Just use temporary uploaded files without saving a session explicitly.
+
+    setIsLoading(true);
+    setApiMessage({type: 'info', text: 'Processing initialization request...'});
+    
+    const formData = new FormData();
+
+    if (selectedSessionToLoad) {
+        formData.append('load_session_id', selectedSessionToLoad);
+    } else {
+        // If not loading, we might be saving a new session or using uploads/library files
+        if (newSessionName.trim()) {
+            formData.append('save_as_session_name', newSessionName.trim());
+            if (overwriteSession) {
+                formData.append('overwrite_session', 'true');
+            }
+        }
+
+        // Add uploaded files
+        if (fasFilesForInit) Array.from(fasFilesForInit).forEach(f => formData.append('fas_files_upload', f, f.name));
+        if (ssFilesForInit) Array.from(ssFilesForInit).forEach(f => formData.append('ss_files_upload', f, f.name));
+        if (rulesFileForInit) formData.append('shariah_rules_explicit_file_upload', rulesFileForInit, rulesFileForInit.name);
+
+        // Add selected library files
+        if (selectedLibraryFas.length > 0) formData.append('library_fas_filenames', JSON.stringify(selectedLibraryFas));
+        if (selectedLibrarySs.length > 0) formData.append('library_ss_filenames', JSON.stringify(selectedLibrarySs));
+    }
+    
+    // Ensure at least some source of files is provided if not loading a session
+    if (!selectedSessionToLoad && !fasFilesForInit && !ssFilesForInit && selectedLibraryFas.length === 0 && selectedLibrarySs.length === 0) {
+        setApiMessage({type:'error', text: "Please select files to process or a session to load."});
+        setIsLoading(false);
+        return;
+    }
+
+
+    try {
+      // The /initialize endpoint in the backend is now modified to handle these params
+      const response = await axios.post<InitResponse & {session_id?: string}>(`${API_BASE_URL}/initialize`, formData, {
+         headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      const data = response.data;
+      setApiMessage({type: data.status === 'success' ? 'success' : 'error', text: `Init ${data.status}: ${data.message}`});
+      if (data.status === 'success') {
+        setIsSystemInitialized(true);
+        setCurrentSessionId(data.session_id || null); // Backend should return the active session_id
+        fetchSessions(); // Refresh session list
+        // Clear input fields for new session name after successful save
+        if (newSessionName.trim() && !selectedSessionToLoad) setNewSessionName(''); 
+      } else {
+        setIsSystemInitialized(false);
+        setCurrentSessionId(null);
+      }
+    } catch (error: any) {
+      setApiMessage({type: 'error', text: `Initialization request failed: ${error.response?.data?.message || error.message}`});
+      setIsSystemInitialized(false);
+      setCurrentSessionId(null);
+    }
+    setIsLoading(false);
+  };
+  const handleSessionSelection = (sessionId: string) => {
+    setSelectedSessionToLoad(sessionId);
+    const session = availableSessions.find(s => s.session_id === sessionId);
+    if (session) {
+      setNewSessionName(session.path); // Set the name to the session path
+      setCurrentSessionId(session.session_id);
+    }
+  };
+
+
+  const handleAcceptSuggestion = (suggestionPackageToAccept: ValidatedSuggestionPackage) => {
+    const originalMarkdown = suggestionPackageToAccept.suggestion_details?.original_text || selectedText;
+    const proposedMarkdown = suggestionPackageToAccept.suggestion_details?.proposed_text;
+
+    if (currentMarkdownContent.includes(originalMarkdown) && proposedMarkdown && markdownEditorRef.current) {
+        const editor = markdownEditorRef.current;
+        const currentValue = editor.value; // Use current value from ref if textarea might not have re-rendered state
+        const startIndex = currentValue.indexOf(originalMarkdown);
+
+        if (startIndex !== -1) {
+            const before = currentValue.substring(0, startIndex);
+            const after = currentValue.substring(startIndex + originalMarkdown.length);
+            const newContent = before + proposedMarkdown + after;
+            
+            setCurrentMarkdownContent(newContent); // Update state
+            // For immediate visual update in textarea if it's controlled and state update is async:
+            editor.value = newContent; 
+            
+            const newCursorPos = startIndex + proposedMarkdown.length;
+            editor.focus();
+            editor.setSelectionRange(newCursorPos, newCursorPos);
+
+            setApiMessage({type:'success', text: `Suggestion from ${suggestionPackageToAccept.source_agent_name} applied!`});
+            setSelectedText(proposedMarkdown);
+        } else {
+             setApiMessage({type:'warning', text: `Original snippet not found in editor to auto-apply. Proposed text copied.`});
+             if (proposedMarkdown) navigator.clipboard.writeText(proposedMarkdown);
+        }
+    } else {
+        setApiMessage({type:'warning', text: `Could not auto-apply (editor ref or text missing). Proposed text copied.`});
+        if (proposedMarkdown) navigator.clipboard.writeText(proposedMarkdown);
+    }
+    setFinalSuggestionsForFAS(prev => prev.filter(s => s !== suggestionPackageToAccept));
+  };
+
+  const handleRejectSuggestion = (suggestionPackageToReject: ValidatedSuggestionPackage) => {
+    setApiMessage({type:'info', text: `Suggestion from ${suggestionPackageToReject.source_agent_name} rejected.`});
+    setFinalSuggestionsForFAS(prev => prev.filter(s => s !== suggestionPackageToReject));
+  };
 
   // --- Render Logic ---
   const renderFasEditor = () => (
@@ -404,10 +632,17 @@ const App: React.FC = () => {
                     <button type="button" onClick={() => setFasEditorViewMode('preview')} className={`btn-toggle ${fasEditorViewMode === 'preview' ? 'btn-toggle-active' : ''}`}>
                         <Eye size={14} className="inline mr-1"/> Preview
                     </button>
+                    <button 
+                      onClick={handleExportMarkdown} 
+                      className="btn-secondary-small mt-3"
+                    >
+                      <Upload size={14} className="mr-1"/> Export Edited Markdown
+                    </button>
                 </div>
             </div>
         )}
         {fasEditorViewMode === 'edit' ? ( 
+          console.log("Markdown Editor Ref:", markdownEditorRef.current),
             <textarea ref={markdownEditorRef} value={currentMarkdownContent} onChange={(e) => setCurrentMarkdownContent(e.target.value)} className="w-full min-h-[50vh] textarea-field" disabled={isExtractingText} placeholder={isExtractingText ? "Extracting..." : "Markdown will appear here."}/>
         ) : ( 
             <div ref={markdownPreviewRef} className="markdown-preview min-h-[50vh]">
@@ -416,6 +651,7 @@ const App: React.FC = () => {
             </div>
         )}
         {selectedText && fasEditorViewMode === 'edit' && (
+          console.log("Selected Text:", selectedText),
              <div className="mt-3 p-3 bg-sky-50 border border-sky-200 rounded-md">
                 <p className="text-sm font-medium text-sky-700">Selected for AI Assistance (FAS Editor):</p>
                 <pre className="selected-text-preview"><code>{selectedText}</code></pre>
@@ -676,27 +912,217 @@ const App: React.FC = () => {
         {/* Conditional Rendering of App Sections */}
         {currentAppView === 'fas_editor' && (
             <>
-                <section className="bg-white p-5 rounded-lg shadow space-y-4">
-                    {/* ... Initialization UI from previous App.tsx ... */}
-                    <h2 className="text-lg font-semibold text-slate-700 flex items-center">
-                      <ServerCrash size={20} className="mr-2 text-sky-600"/>1. Backend Setup
-                    </h2>
-                    <div>
-                      <h3 className="text-md font-medium text-slate-600 mb-2">Initialize Knowledge Base:</h3>
-                      <FileUploader label="FAS PDF(s) for Backend" accept=".pdf" multiple={true} onFilesUploaded={setFasFilesForInit} id="fas-init-uploader" />
-                      <FileUploader label="SS PDF(s) for Backend" accept=".pdf" multiple={true} onFilesUploaded={setSsFilesForInit} id="ss-init-uploader"/>
-                      <FileUploader label="Explicit Rules JSON (Optional)" accept=".json" onFilesUploaded={(file) => setRulesFileForInit(file as File)} id="rules-init-uploader" />
-                      <button onClick={handleInitializeBackend} disabled={isLoading || !fasFilesForInit} className="w-full btn-primary mt-3">
-                        {(isLoading && apiMessage?.text.includes('Initializing backend')) ? <Loader2 className="inline mr-2 h-4 w-4 animate-spin"/> : '🚀 '}
-                        Initialize Backend
-                      </button>
-                      {isSystemInitialized && <p className="text-xs text-green-600 mt-2 flex items-center"><CheckCircle size={14} className="mr-1"/> Backend initialized.</p>}
+                <section className="bg-white p-5 rounded-lg shadow space-y-6">
+                  <h2 className="text-lg font-semibold text-slate-700 flex items-center">
+                    <Settings size={20} className="mr-2 text-sky-600"/>1. System Setup & Session Management
+                  </h2>
+
+                  {/* Tab-like interface for setup options */}
+                  <div className="flex border-b border-slate-200 mb-4">
+                    {/* These would be state-driven tabs if more complex */}
+                    <button className="px-3 py-2 text-sm font-medium text-slate-600 border-b-2 border-transparent hover:border-sky-500 hover:text-sky-600 focus:outline-none focus:border-sky-700">
+                      Initialize New/Default
+                    </button>
+                    {/* Add more buttons here for "Load Session" if you make it tabbed */}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Column 1: Initialize with Files (Upload + Library) */}
+                    <div className="space-y-4 p-3 border border-slate-200 rounded-md">
+                      <h3 className="text-md font-medium text-slate-600">Initialize with Files:</h3>
+                      
+                      <p className="text-xs text-slate-500">Select files from your computer or the server's PDF library.</p>
+                      
+                      <div>
+                        <h4 className="text-sm font-semibold text-slate-500 mb-1">Upload Files:</h4>
+                        <FileUploader label="FAS PDF(s) Upload" accept=".pdf" multiple={true} onFilesUploaded={setFasFilesForInit} id="fas-init-upload" />
+                        <FileUploader label="SS PDF(s) Upload" accept=".pdf" multiple={true} onFilesUploaded={setSsFilesForInit} id="ss-init-upload"/>
+                        <FileUploader label="Explicit Rules JSON Upload (Optional)" accept=".json" onFilesUploaded={(file) => setRulesFileForInit(file as File)} id="rules-init-upload" />
+                      </div>
+
+                      {libraryPdfs.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-slate-500 mb-1">Or Select from Server Library:</h4>
+                          <div className="max-h-40 overflow-y-auto border p-2 rounded-md text-xs">
+                            <p className="font-medium mb-1">FAS Files from Library:</p>
+{libraryPdfs.filter(item => {
+    if (item.type === 'file') {
+        // Better file pattern matching for FAS files
+        return item.name.toLowerCase().includes('fas') || 
+               /f[a-z]*_?a[a-z]*_?s[a-z]*/i.test(item.name) ||
+               item.name.toLowerCase().includes('financial_accounting_standard');
+    } else if (item.type === 'directory') {
+        // For directories
+        return item.name.toLowerCase().includes('fas') || 
+               item.name.toLowerCase().includes('financial') || 
+               item.name.toLowerCase().includes('accounting');
+    }
+    return false;
+}).map(item => (
+    item.type === 'file' ? 
+    <div key={item.name} className="flex items-center space-x-1">
+        <input 
+            type="checkbox" 
+            id={`fas-${item.name}`}
+            value={item.name} 
+            onChange={(e) => {
+                const name = e.target.value;
+                setSelectedLibraryFas(prev => 
+                    e.target.checked ? [...prev, name] : prev.filter(n => n !== name)
+                );
+            }} 
+            className="text-sky-600 focus:ring-sky-500"
+        />
+        <label htmlFor={`fas-${item.name}`} className="text-xs truncate">{item.name}</label>
+    </div>
+    : <div key={item.name} className="ml-2">
+        <p className="text-xs font-medium text-slate-700 mt-1">{item.name}/</p>
+        <div className="pl-3">
+        {item.files?.map(f => 
+            <div key={f} className="flex items-center space-x-1">
+                <input 
+                    type="checkbox" 
+                    id={`fas-${item.name}-${f}`}
+                    value={`${item.name}/${f}`} 
+                    onChange={(e) => {
+                        const path = e.target.value;
+                        setSelectedLibraryFas(prev => 
+                            e.target.checked ? [...prev, path] : prev.filter(n => n !== path)
+                        );
+                    }}
+                    className="text-sky-600 focus:ring-sky-500" 
+                />
+                <label htmlFor={`fas-${item.name}-${f}`} className="text-xs truncate">{f}</label>
+            </div>
+        )}
+        </div>
+    </div>
+))}
+
+<p className="font-medium mt-3 mb-1">SS Files from Library:</p>
+{libraryPdfs.filter(item => {
+    if (item.type === 'file') {
+        // Better file pattern matching for SS files
+        return item.name.toLowerCase().includes('ss') || 
+               item.name.toLowerCase().includes('shariah') || 
+               item.name.toLowerCase().includes('shari\'ah') || 
+               item.name.toLowerCase().includes('sharia') || 
+               /s[a-z]*_?s[a-z]*/i.test(item.name);
+    } else if (item.type === 'directory') {
+        // For directories
+        return item.name.toLowerCase().includes('ss') || 
+               item.name.toLowerCase().includes('shariah') || 
+               item.name.toLowerCase().includes('shari\'ah') || 
+               item.name.toLowerCase().includes('sharia') || 
+               item.name.toLowerCase().includes('standard');
+    }
+    return false;
+}).map(item => (
+    item.type === 'file' ? 
+    <div key={item.name} className="flex items-center space-x-1">
+        <input 
+            type="checkbox" 
+            id={`ss-${item.name}`}
+            value={item.name} 
+            onChange={(e) => {
+                const name = e.target.value;
+                setSelectedLibrarySs(prev => 
+                    e.target.checked ? [...prev, name] : prev.filter(n => n !== name)
+                );
+            }}
+            className="text-teal-600 focus:ring-teal-500" 
+        />
+        <label htmlFor={`ss-${item.name}`} className="text-xs truncate">{item.name}</label>
+    </div>
+    : <div key={item.name} className="ml-2">
+        <p className="text-xs font-medium text-slate-700 mt-1">{item.name}/</p>
+        <div className="pl-3">
+        {item.files?.map(f => 
+            <div key={f} className="flex items-center space-x-1">
+                <input 
+                    type="checkbox" 
+                    id={`ss-${item.name}-${f}`}
+                    value={`${item.name}/${f}`} 
+                    onChange={(e) => {
+                        const path = e.target.value;
+                        setSelectedLibrarySs(prev => 
+                            e.target.checked ? [...prev, path] : prev.filter(n => n !== path)
+                        );
+                    }}
+                    className="text-teal-600 focus:ring-teal-500" 
+                />
+                <label htmlFor={`ss-${item.name}-${f}`} className="text-xs truncate">{f}</label>
+            </div>
+        )}
+        </div>
+    </div>
+))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="mt-3">
+                        <label htmlFor="newSessionName" className="block text-xs font-medium text-slate-700">Save this configuration as session (Optional):</label>
+                        <input 
+                            type="text" id="newSessionName" value={newSessionName} 
+                            onChange={(e) => setNewSessionName(e.target.value)} 
+                            placeholder="e.g., MyFAS_Project_Q1"
+                            className="mt-1 input-field text-xs"
+                        />
+                        {newSessionName && <label className="text-xs flex items-center mt-1"><input type="checkbox" checked={overwriteSession} onChange={(e) => setOverwriteSession(e.target.checked)} className="mr-1"/> Overwrite if exists</label>}
+                      </div>
                     </div>
-                  </section>
+
+                    {/* Column 2: Load Existing Session */}
+                    <div className="space-y-4 p-3 border border-slate-200 rounded-md">
+                      <h3 className="text-md font-medium text-slate-600">Or Load Existing Session:</h3>
+                      {availableSessions.length > 0 ? (
+                        <div className="space-y-2">
+                          <select 
+                            value={selectedSessionToLoad} 
+                            onChange={(e) => {
+                                setSelectedSessionToLoad(e.target.value);
+                                if(e.target.value) { // If a session is chosen to load, clear new session name
+                                    setNewSessionName('');
+                                    // Clear file selections as we are loading, not creating with these files
+                                    setSelectedLibraryFas([]);
+                                    setSelectedLibrarySs([]);
+                                    // Potentially clear uploaded file states too (setFasFilesForInit(null), etc.)
+                                }
+                            }}
+                            className="input-field text-sm"
+                          >
+                            <option value="">-- Select a session to load --</option>
+                            {availableSessions.map(session => (
+                              <option key={session.session_id} value={session.session_id}>
+                                {session.session_id} (FAS: {session.has_fas_db ? '✓':'✗'}, SS: {session.has_ss_db ? '✓':'✗'}, Mod: {session.last_modified})
+                              </option>
+                            ))}
+                          </select>
+                          {selectedSessionToLoad && <p className="text-xs text-sky-600">Loading session '{selectedSessionToLoad}' will use its stored vector databases.</p>}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-500">No saved sessions found. Initialize one first.</p>
+                      )}
+                      <button onClick={fetchSessions} className="btn-secondary-small text-xs mt-2">Refresh Session List</button>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    onClick={handleInitializeModified} 
+                    disabled={isLoading} 
+                    className="w-full btn-primary mt-4 py-2.5"
+                  >
+                    {isLoading && apiMessage?.text.includes('Processing initialization') ? <Loader2 className="inline mr-2 h-5 w-5 animate-spin"/> : '🚀 '}
+                    {selectedSessionToLoad ? `Load Session: ${selectedSessionToLoad}` : 'Initialize / Save Session'}
+                  </button>
+                  {currentSessionId && <p className="text-xs text-green-700 bg-green-100 p-2 rounded mt-2">✅ Active Session: <strong>{currentSessionId}</strong></p>}
+                </section>
                  {isSystemInitialized && renderFasEditor()} 
                  {!isSystemInitialized && 
-                    <div className="p-4 bg-yellow-50 text-yellow-700 rounded-md border border-yellow-300">
-                        <Info size={18} className="inline mr-2"/>Please initialize the backend system (Section 1 in main controls) to enable full AI context for FAS document editing.
+                    <div className="p-6 bg-yellow-50 text-yellow-700 rounded-md border border-yellow-300 text-center shadow">
+                      <Info size={24} className="mx-auto mb-2"/>
+                      <p className="font-medium">The ASAVE system backend needs to be initialized first.</p>
+                      <p className="text-sm">Please go to "System Setup" and initialize with FAS/SS files or load a session to activate the AI features.</p>
                     </div>
                  }
             </>
@@ -709,8 +1135,8 @@ const App: React.FC = () => {
       <Sidebar
         progressLog={progressLog}
         suggestions={currentAppView === 'fas_editor' ? finalSuggestionsForFAS : []} // Sidebar suggestions for FAS editor
-        onAcceptSuggestion={handleAcceptFASSuggestion}
-        onRejectSuggestion={handleRejectFASSuggestion}
+        onAcceptSuggestion={handleAcceptSuggestion}
+        onRejectSuggestion={handleRejectSuggestion  }
         isLoading={isLoading || isProcessingContract}
         className="w-full md:w-[450px] md:min-w-[400px] lg:w-[500px] lg:min-w-[450px] h-screen md:max-h-screen overflow-y-auto"
       />
